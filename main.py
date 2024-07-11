@@ -25,7 +25,7 @@ canvasFrame = customtkinter.CTkFrame(master=app, width=700, height=60, fg_color=
 canvasFrame.pack_propagate(0)
 canvasFrame.pack(side="right", fill="both", expand=True)
 
-cropping = False
+
 
 def flip_horizontally():
     global img
@@ -47,24 +47,40 @@ def rotate_anticlockwise():
     img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
     update_image()
 
-
+cropping = False
+drawing = False
+draw_color= (43, 57, 192)
+last_x, last_y = None, None
 rect_start_x, rect_start_y = None, None
 rect = None
+draw = False
+
+def set_color(new_color):
+    global draw_color
+    draw_color = new_color
 
 def on_mouse_down(event):
-    global rect_start_x, rect_start_y, rect, cropping
+    global rect_start_x, rect_start_y, rect, cropping, draw, last_x, last_y, drawing
     if cropping:
         rect_start_x, rect_start_y = event.x, event.y
         rect = canvas_img.create_rectangle(rect_start_x, rect_start_y, rect_start_x, rect_start_y, outline='green')
+    if drawing:
+        draw = True
+        last_x, last_y = event.x, event.y
 
 def on_mouse_move(event):
-    global rect_start_x, rect_start_y, rect, cropping
+    global rect_start_x, rect_start_y, rect, cropping, img, draw_color, last_x, last_y, drawing
     if cropping and rect:
         if rect:
             canvas_img.coords(rect, rect_start_x, rect_start_y, event.x, event.y)
+    if drawing and draw:
+        x, y = event.x, event.y
+        cv2.line(img, (last_x, last_y), (x, y), draw_color, 2)
+        last_x, last_y = x, y
+        update_image()
 
 def on_mouse_up(event):
-    global img, rect_start_x, rect_start_y, rect, cropping
+    global img, rect_start_x, rect_start_y, rect, cropping, draw
     if cropping:
         rect_end_x, rect_end_y = event.x, event.y
         if rect:
@@ -75,13 +91,15 @@ def on_mouse_up(event):
             img = cv2.resize(img, (800, 600))
             update_image()
         cropping = False
+    if drawing:
+        draw = False
 
 
 
 
 # Functions to change and update button colors
 def change_toolbar(clicked_button):
-    global cropping
+    global cropping, drawing
     # Remove all existing widgets from the tool frame
     for widget in tool.winfo_children():
         widget.destroy()
@@ -93,18 +111,23 @@ def change_toolbar(clicked_button):
     if clicked_button == crop_button:
         crop_update()
         cropping = True
+        drawing = False
     elif clicked_button == filter_button:
         filter_update()
         cropping = False
+        drawing = False
     elif clicked_button == doodle_button:
         doodle_update()
         cropping = False
+        drawing = True
     elif clicked_button == resize_button:
         resize_update()
         cropping = False
+        drawing = False
     elif clicked_button == text_button:
         text_update()
         cropping = False
+        drawing = False
 
 def filter_update():
     CTkLabel(master=tool, text="Filter", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
@@ -112,35 +135,35 @@ def filter_update():
 def doodle_update():
     CTkLabel(master=tool, text="Doodle", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
     CTkLabel(master=tool, text=f"Choose Color", font=("Corbel Bold", 18)).grid(row=1, column=0, sticky="nw", pady=20, padx=5, columnspan=3)
-    col1_button = CTkButton(master=tool, text="", fg_color="#C0392B", width=28, height=28, hover_color="#C0392B", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col1_button = CTkButton(master=tool, text="", fg_color="#C0392B", width=28, height=28, hover_color="#C0392B", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((43, 57, 192)))
     col1_button.grid(row=2, column=0, sticky="nw", pady=5, padx=5)
-    col2_button = CTkButton(master=tool, text="", fg_color="#9B59B6", width=28, height=28, hover_color="#9B59B6", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col2_button = CTkButton(master=tool, text="", fg_color="#9B59B6", width=28, height=28, hover_color="#9B59B6", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((182, 89, 155)))
     col2_button.grid(row=2, column=1, sticky="nw", pady=5, padx=5)
-    col3_button = CTkButton(master=tool, text="", fg_color="#2980B9", width=28, height=28, hover_color="#2980B9", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col3_button = CTkButton(master=tool, text="", fg_color="#2980B9", width=28, height=28, hover_color="#2980B9", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((185, 128, 41)))
     col3_button.grid(row=2, column=2, sticky="nw", pady=5, padx=5)
-    col4_button = CTkButton(master=tool, text="", fg_color="#1ABC9C", width=28, height=28, hover_color="#1ABC9C", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col4_button = CTkButton(master=tool, text="", fg_color="#1ABC9C", width=28, height=28, hover_color="#1ABC9C", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((156, 188, 26)))
     col4_button.grid(row=3, column=0, sticky="nw", pady=5, padx=5)
-    col5_button = CTkButton(master=tool, text="", fg_color="#27AE60", width=28, height=28, hover_color="#27AE60", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col5_button = CTkButton(master=tool, text="", fg_color="#27AE60", width=28, height=28, hover_color="#27AE60", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((96, 174, 39)))
     col5_button.grid(row=3, column=1, sticky="nw", pady=5, padx=5)
-    col6_button = CTkButton(master=tool, text="", fg_color="#F1C40F", width=28, height=28, hover_color="#F1C40F", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col6_button = CTkButton(master=tool, text="", fg_color="#F1C40F", width=28, height=28, hover_color="#F1C40F", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((15, 196, 241)))
     col6_button.grid(row=3, column=2, sticky="nw", pady=5, padx=5)
-    col7_button = CTkButton(master=tool, text="", fg_color="#E67E22", width=28, height=28, hover_color="#E67E22", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col7_button = CTkButton(master=tool, text="", fg_color="#E67E22", width=28, height=28, hover_color="#E67E22", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((34, 126, 230)))
     col7_button.grid(row=4, column=0, sticky="nw", pady=5, padx=5)
-    col8_button = CTkButton(master=tool, text="", fg_color="#ECF0F1", width=28, height=28, hover_color="#ECF0F1", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col8_button = CTkButton(master=tool, text="", fg_color="#ECF0F1", width=28, height=28, hover_color="#ECF0F1", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((241, 240, 236)))
     col8_button.grid(row=4, column=1, sticky="nw", pady=5, padx=5)
-    col9_button = CTkButton(master=tool, text="", fg_color="#95A5A6", width=28, height=28, hover_color="#95A5A6", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col9_button = CTkButton(master=tool, text="", fg_color="#95A5A6", width=28, height=28, hover_color="#95A5A6", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((166, 165, 149)))
     col9_button.grid(row=4, column=2, sticky="nw", pady=5, padx=5)
-    col10_button = CTkButton(master=tool, text="", fg_color="#34495E", width=28, height=28, hover_color="#34495E", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col10_button = CTkButton(master=tool, text="", fg_color="#34495E", width=28, height=28, hover_color="#34495E", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((94, 73, 52)))
     col10_button.grid(row=5, column=0, sticky="nw", pady=5, padx=5)
-    col11_button = CTkButton(master=tool, text="", fg_color="#DE3163", width=28, height=28, hover_color="#DE3163", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col11_button = CTkButton(master=tool, text="", fg_color="#DE3163", width=28, height=28, hover_color="#DE3163", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((99, 49, 222)))
     col11_button.grid(row=5, column=1, sticky="nw", pady=5, padx=5)
-    col12_button = CTkButton(master=tool, text="", fg_color="#000000", width=28, height=28, hover_color="#000000", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col12_button = CTkButton(master=tool, text="", fg_color="#000000", width=28, height=28, hover_color="#000000", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((0, 0, 0)))
     col12_button.grid(row=5, column=2, sticky="nw", pady=5, padx=5)
-    col13_button = CTkButton(master=tool, text="", fg_color="#00FFFF", width=28, height=28, hover_color="#00FFFF", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col13_button = CTkButton(master=tool, text="", fg_color="#00FFFF", width=28, height=28, hover_color="#00FFFF", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((255, 255, 0)))
     col13_button.grid(row=6, column=0, sticky="nw", pady=5, padx=5)
-    col14_button = CTkButton(master=tool, text="", fg_color="#4B5320", width=28, height=28, hover_color="#4B5320", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col14_button = CTkButton(master=tool, text="", fg_color="#4B5320", width=28, height=28, hover_color="#4B5320", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((32, 83, 75)))
     col14_button.grid(row=6, column=1, sticky="nw", pady=5, padx=5)
-    col15_button = CTkButton(master=tool, text="", fg_color="#FFFFCC", width=28, height=28, hover_color="#FFFFCC", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    col15_button = CTkButton(master=tool, text="", fg_color="#FFFFCC", width=28, height=28, hover_color="#FFFFCC", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((204, 255, 255)))
     col15_button.grid(row=6, column=2, sticky="nw", pady=5, padx=5)
     
 
