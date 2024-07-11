@@ -282,10 +282,16 @@ def open_image():
     img = cv2.resize(img, (800, 600))  # Resize to fit your window if needed
     update_image()
 
+def save_file():
+    global img
+    file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("BMP files", "*.bmp")])
+    if file_path:
+        cv2.imwrite(file_path, img)
+
 open_button = customtkinter.CTkButton(master=canvasFrame, text="Open Image", fg_color="gray", hover_color="gray", width=100, height=40, font=("Corbel Bold", 16), command=open_image)
 open_button.grid(row=8, column=5, sticky="e", padx=(0, 0), pady=(10, 10))
 
-save_button = customtkinter.CTkButton(master=canvasFrame, text="Save Image", fg_color="#fc5e03", hover_color="#fc5e03", width=100, height=40, font=("Corbel Bold", 16))
+save_button = customtkinter.CTkButton(master=canvasFrame, text="Save Image", fg_color="#fc5e03", hover_color="#fc5e03", width=100, height=40, font=("Corbel Bold", 16), command=save_file)
 save_button.grid(row=8, column=6, sticky="n", padx=(0, 0), pady=(10, 10))
 
 # Bind mouse events to the canvas
