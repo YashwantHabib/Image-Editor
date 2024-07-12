@@ -54,19 +54,26 @@ last_x, last_y = None, None
 rect_start_x, rect_start_y = None, None
 rect = None
 draw = False
+text_mode = False
 
 def set_color(new_color):
     global draw_color
     draw_color = new_color
 
 def on_mouse_down(event):
-    global rect_start_x, rect_start_y, rect, cropping, draw, last_x, last_y, drawing
+    global rect_start_x, rect_start_y, rect, cropping, draw, last_x, last_y, drawing, entry
     if cropping:
         rect_start_x, rect_start_y = event.x, event.y
         rect = canvas_img.create_rectangle(rect_start_x, rect_start_y, rect_start_x, rect_start_y, outline='green')
     if drawing:
         draw = True
         last_x, last_y = event.x, event.y
+    if text_mode:
+        text_input = entry.get()
+        text_x = event.x
+        text_y = event.y
+        cv2.putText(img, text_input, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 20 / 10, draw_color, 2, cv2.LINE_AA)
+        update_image()
 
 def on_mouse_move(event):
     global rect_start_x, rect_start_y, rect, cropping, img, draw_color, last_x, last_y, drawing
@@ -88,7 +95,7 @@ def on_mouse_up(event):
             rect = None
             roi = img[rect_start_y:rect_end_y, rect_start_x:rect_end_x]
             img = roi
-            img = cv2.resize(img, (800, 600))
+            img = resize_image(img, 800, 600)
             update_image()
         cropping = False
     if drawing:
@@ -99,7 +106,7 @@ def on_mouse_up(event):
 
 # Functions to change and update button colors
 def change_toolbar(clicked_button):
-    global cropping, drawing
+    global cropping, drawing, text_mode
     # Remove all existing widgets from the tool frame
     for widget in tool.winfo_children():
         widget.destroy()
@@ -112,22 +119,27 @@ def change_toolbar(clicked_button):
         crop_update()
         cropping = True
         drawing = False
+        text_mode = False
     elif clicked_button == filter_button:
         filter_update()
         cropping = False
         drawing = False
+        text_mode = False
     elif clicked_button == doodle_button:
         doodle_update()
         cropping = False
         drawing = True
+        text_mode = False
     elif clicked_button == resize_button:
         resize_update()
         cropping = False
         drawing = False
+        text_mode = False
     elif clicked_button == text_button:
         text_update()
         cropping = False
         drawing = False
+        text_mode = True
 
 def filter_update():
     CTkLabel(master=tool, text="Filter", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
@@ -166,8 +178,10 @@ def doodle_update():
     col15_button = CTkButton(master=tool, text="", fg_color="#FFFFCC", width=28, height=28, hover_color="#FFFFCC", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((204, 255, 255)))
     col15_button.grid(row=6, column=2, sticky="nw", pady=5, padx=5)
     
+resize_value=0
 
 def resize_update():
+    
     CTkLabel(master=tool, text="Resize", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
     CTkLabel(master=tool, text="Percentage", font=("Corbel Bold", 18)).grid(row=1, column=0, sticky="nw", pady=20, padx=5, columnspan=2)
     
@@ -175,45 +189,52 @@ def resize_update():
     percentage.grid(row=3, column=0, sticky="n", pady=10, padx=5, columnspan=2)
     
     def slider_event(value):
+        global resize_value
+        resize_value=int(value)
         percentage.configure(text=f"{int(value)}%")
     
     slider = customtkinter.CTkSlider(master=tool, from_=0, to=100, button_color="#fa814d", button_hover_color="#fa814d", progress_color="#fa814d", command=slider_event)
     slider.grid(row=2, column=0, sticky="nw", pady=10, padx=5, columnspan=2)
 
     def resize_button_event():
-        print("button pressed")
+        global original_image, resize_value
+        if resize_value>1 and resize_value<99 :
+            width = int(original_image.shape[1] * (100-resize_value) / 100)
+            height = int(original_image.shape[0] * (100-resize_value) / 100)
+            resized_img = resize_image(original_image, width, height)
+            file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("BMP files", "*.bmp")])
+            if file_path:
+                cv2.imwrite(file_path, resized_img)
 
-    resize_button = customtkinter.CTkButton(tool, text="Resize",font=("Corbel", 18), anchor="center", fg_color="#fa814d", hover_color="#fa814d", text_color="black", command=resize_button_event)
+    resize_button = customtkinter.CTkButton(tool, text="Save Resized Image",font=("Corbel", 18), anchor="center", fg_color="#fa814d", hover_color="#fa814d", text_color="black", command=resize_button_event)
     resize_button.grid(row=4, column=0, sticky="n" , columnspan=3)
 
 
-    
-
-
 def text_update():
+    global entry
     CTkLabel(master=tool, text="Text", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
     CTkLabel(master=tool, text="Enter Text", font=("Corbel Bold", 18)).grid(row=1, column=0, sticky="nw", pady=20, padx=5, columnspan=2)
     entry = customtkinter.CTkEntry(tool, placeholder_text="Text", border_color="#fa814d")
     entry.grid(row=2, column=0, sticky="nw", pady=(5,15), padx=5, columnspan=2)
     select_img_data = Image.open(r"C:\Users\91984\Desktop\cgProj\Image-Editor\selection.png")
     select_img = CTkImage(dark_image=select_img_data, light_image=select_img_data)
-    text_col1_button = CTkButton(master=tool, text="", fg_color="#C0392B", width=28, height=28, hover_color="#C0392B", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col1_button = CTkButton(master=tool, text="", fg_color="#C0392B", width=28, height=28, hover_color="#C0392B", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((43, 57, 192)))
     text_col1_button.grid(row=3, column=0, sticky="nw", pady=5, padx=5)
-    text_col2_button = CTkButton(master=tool, text="", fg_color="#9B59B6", width=28, height=28, hover_color="#9B59B6", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col2_button = CTkButton(master=tool, text="", fg_color="#9B59B6", width=28, height=28, hover_color="#9B59B6", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((182, 89, 155)))
     text_col2_button.grid(row=3, column=1, sticky="nw", pady=5, padx=5)
-    text_col3_button = CTkButton(master=tool, text="", fg_color="#2980B9", width=28, height=28, hover_color="#2980B9", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col3_button = CTkButton(master=tool, text="", fg_color="#2980B9", width=28, height=28, hover_color="#2980B9", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((185, 128, 41)))
     text_col3_button.grid(row=3, column=2, sticky="nw", pady=5, padx=5)
-    text_col4_button = CTkButton(master=tool, text="", fg_color="#1ABC9C", width=28, height=28, hover_color="#1ABC9C", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col4_button = CTkButton(master=tool, text="", fg_color="#1ABC9C", width=28, height=28, hover_color="#1ABC9C", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((156, 188, 26)))
     text_col4_button.grid(row=4, column=0, sticky="nw", pady=5, padx=5)
-    text_col5_button = CTkButton(master=tool, text="", fg_color="#27AE60", width=28, height=28, hover_color="#27AE60", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col5_button = CTkButton(master=tool, text="", fg_color="#27AE60", width=28, height=28, hover_color="#27AE60", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((96, 174, 39)))
     text_col5_button.grid(row=4, column=1, sticky="nw", pady=5, padx=5)
-    text_col6_button = CTkButton(master=tool, text="", fg_color="#F1C40F", width=28, height=28, hover_color="#F1C40F", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col6_button = CTkButton(master=tool, text="", fg_color="#F1C40F", width=28, height=28, hover_color="#F1C40F", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((15, 196, 241)))
     text_col6_button.grid(row=4, column=2, sticky="nw", pady=5, padx=5)
-    text_col7_button = CTkButton(master=tool, text="", fg_color="#E67E22", width=28, height=28, hover_color="#E67E22", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col7_button = CTkButton(master=tool, text="", fg_color="#E67E22", width=28, height=28, hover_color="#E67E22", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((34, 126, 230)))
     text_col7_button.grid(row=5, column=0, sticky="nw", pady=5, padx=5)
-    text_col8_button = CTkButton(master=tool, text="", fg_color="#ECF0F1", width=28, height=28, hover_color="#ECF0F1", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col8_button = CTkButton(master=tool, text="", fg_color="#ECF0F1", width=28, height=28, hover_color="#ECF0F1", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((241, 240, 236)))
     text_col8_button.grid(row=5, column=1, sticky="nw", pady=5, padx=5)
-    text_col9_button = CTkButton(master=tool, text="", fg_color="#000000", width=28, height=28, hover_color="#000000", corner_radius=20, border_color="black", border_width=1, anchor="w")
+    text_col9_button = CTkButton(master=tool, text="", fg_color="#000000", width=28, height=28, hover_color="#000000", corner_radius=20, border_color="black", border_width=1, anchor="w", command=lambda: set_color((0, 0, 0)))
     text_col9_button.grid(row=5, column=2, sticky="nw", pady=5, padx=5)
 
 def crop_update():
@@ -281,7 +302,7 @@ sidebar_buttons.append(text_button)
 CTkLabel(master=tool, text=f"Filter", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5)
 
 canvas_img = CTkCanvas(master=canvasFrame, width=800, height=600)
-canvas_img.grid(row=0, column=0, sticky="nw", pady=20, padx=20, columnspan=7, rowspan=7)
+canvas_img.grid(row=0, column=0, sticky="nw", pady=20, padx=20, columnspan=10, rowspan=7)
 
 def update_image():
     global tk_img
@@ -290,19 +311,52 @@ def update_image():
     tk_img = ImageTk.PhotoImage(img_pil)
     canvas_img.create_image(0, 0, anchor='nw', image=tk_img)
 
+def resize_image(image, max_width, max_height):
+    # Get original dimensions
+    original_width, original_height = image.shape[1], image.shape[0]
+
+    # Calculate the aspect ratio
+    aspect_ratio = original_width / original_height
+
+    # Calculate new dimensions based on aspect ratio
+    if original_width > original_height:
+        if original_width > max_width:
+            new_width = min(original_width, max_width)
+        else:
+            new_width = max(original_width, max_width)
+        new_height = int(new_width / aspect_ratio)
+        if new_height > max_height:
+            new_height = max_height
+            new_width = int(new_height * aspect_ratio)
+    else:
+        new_height = min(original_height, max_height)
+        new_width = int(new_height * aspect_ratio)
+        if new_width > max_width:
+            new_width = max_width
+            new_height = int(new_width / aspect_ratio)
+
+    return cv2.resize(image, (new_width,new_height))
+
+
+
+
+
 img = cv2.imread(r"C:\Users\91984\Desktop\cgProj\Image-Editor\demo-img.jpg")
-img = cv2.resize(img, (800, 600))  # Resize to fit your window if needed
-update_image()
-
-
+original_image=img
+img = resize_image(img, 800,600)  # Resize to fit your window if needed
+img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+img_pil = Image.fromarray(img_rgb)
+pk_img = ImageTk.PhotoImage(img_pil)
+canvas_img.create_image(0, 0, anchor='nw', image=pk_img)
 
 def open_image():
-    global img, tk_img
+    global img, tk_img, original_image
     filepath = filedialog.askopenfilename()
     if not filepath:
         return
     img = cv2.imread(filepath)
-    img = cv2.resize(img, (800, 600))  # Resize to fit your window if needed
+    original_image = img
+    img = resize_image(img, 800, 600) # Resize to fit your window if needed
     update_image()
 
 def save_file():
@@ -311,13 +365,13 @@ def save_file():
     if file_path:
         cv2.imwrite(file_path, img)
 
-open_button = customtkinter.CTkButton(master=canvasFrame, text="Open Image", fg_color="gray", hover_color="gray", width=100, height=40, font=("Corbel Bold", 16), command=open_image)
-open_button.grid(row=8, column=5, sticky="e", padx=(0, 0), pady=(10, 10))
+open_button = customtkinter.CTkButton(master=canvasFrame, text="Open Image", fg_color="#4f5052", hover_color="#4f5052", width=100, height=40, font=("Corbel Bold", 16), command=open_image)
+open_button.grid(row=8, column=8, sticky="e", padx=(0, 0), pady=(10, 10))
 
 save_button = customtkinter.CTkButton(master=canvasFrame, text="Save Image", fg_color="#fc5e03", hover_color="#fc5e03", width=100, height=40, font=("Corbel Bold", 16), command=save_file)
-save_button.grid(row=8, column=6, sticky="n", padx=(0, 0), pady=(10, 10))
+save_button.grid(row=8, column=9, sticky="n", padx=(0, 0), pady=(10, 10))
 
-# Bind mouse events to the canvas
+
 canvas_img.bind("<ButtonPress-1>", on_mouse_down)
 canvas_img.bind("<B1-Motion>", on_mouse_move)
 canvas_img.bind("<ButtonRelease-1>", on_mouse_up)
