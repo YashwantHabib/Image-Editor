@@ -141,8 +141,13 @@ def change_toolbar(clicked_button):
         drawing = False
         text_mode = True
 
+
+
 def filter_update():
     CTkLabel(master=tool, text="Filter", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
+    CTkLabel(master=tool, text=f"Choose Filter", font=("Corbel Bold", 18)).grid(row=1, column=0, sticky="nw", pady=20, padx=5, columnspan=3)
+    filter1_button = CTkButton(master=tool, text="", width=100, height=100,  corner_radius=10, image=r"imgBlur.jpg" ,  anchor="w")
+    filter1_button.grid(row=2, column=0, sticky="nw", pady=5, padx=5)
 
 def doodle_update():
     CTkLabel(master=tool, text="Doodle", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
@@ -298,8 +303,6 @@ text_button = CTkButton(master=sidebar, image=text_img, text="", fg_color="#fff"
 text_button.pack(anchor="center", ipady=5, pady=(16, 0))
 sidebar_buttons.append(text_button)
 
-# Initial Label
-CTkLabel(master=tool, text=f"Filter", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5)
 
 canvas_img = CTkCanvas(master=canvasFrame, width=800, height=600)
 canvas_img.grid(row=0, column=0, sticky="nw", pady=20, padx=20, columnspan=10, rowspan=7)
@@ -344,10 +347,7 @@ def resize_image(image, max_width, max_height):
 img = cv2.imread(r"C:\Users\91984\Desktop\cgProj\Image-Editor\demo-img.jpg")
 original_image=img
 img = resize_image(img, 800,600)  # Resize to fit your window if needed
-img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-img_pil = Image.fromarray(img_rgb)
-pk_img = ImageTk.PhotoImage(img_pil)
-canvas_img.create_image(0, 0, anchor='nw', image=pk_img)
+update_image()
 
 def open_image():
     global img, tk_img, original_image
@@ -371,6 +371,7 @@ open_button.grid(row=8, column=8, sticky="e", padx=(0, 0), pady=(10, 10))
 save_button = customtkinter.CTkButton(master=canvasFrame, text="Save Image", fg_color="#fc5e03", hover_color="#fc5e03", width=100, height=40, font=("Corbel Bold", 16), command=save_file)
 save_button.grid(row=8, column=9, sticky="n", padx=(0, 0), pady=(10, 10))
 
+filter_update()
 
 canvas_img.bind("<ButtonPress-1>", on_mouse_down)
 canvas_img.bind("<B1-Motion>", on_mouse_move)
@@ -378,4 +379,3 @@ canvas_img.bind("<ButtonRelease-1>", on_mouse_up)
 
 
 app.mainloop()
-
