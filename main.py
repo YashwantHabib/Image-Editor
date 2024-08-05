@@ -47,6 +47,64 @@ def rotate_anticlockwise():
     img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
     update_image()
 
+def imgBlur():
+    global img
+    img = cv2.GaussianBlur(img, (5,5), 0, 0)
+    update_image()
+
+def imgBright():
+    global img
+    img = cv2.convertScaleAbs(img, beta =50)
+    update_image()
+
+def imgHdr():
+    global img
+    img = cv2.detailEnhance(img, sigma_s = 1, sigma_r = 0.05)
+    update_image()
+
+def imgSepia():
+    global img
+    img_sepia = img.copy()
+    # Converting to RGB as sepia matrix below is for RGB.
+    img_sepia = cv2.cvtColor(img_sepia, cv2.COLOR_BGR2RGB) 
+    img_sepia = np.array(img_sepia, dtype = np.float64)
+    img_sepia = cv2.transform(img_sepia, np.matrix([[0.393, 0.769, 0.189],
+                                                        [0.349, 0.686, 0.168],
+                                                        [0.272, 0.534, 0.131]]))
+    # Clip values to the range [0, 255].
+    img_sepia = np.clip(img_sepia, 0, 255)
+    img_sepia = np.array(img_sepia, dtype = np.uint8)
+    img_sepia = cv2.cvtColor(img_sepia, cv2.COLOR_RGB2BGR)
+    img= img_sepia
+    update_image()
+
+def imgStyle():
+    global img
+    blur = cv2.GaussianBlur(img, (5,5), 0, 0)
+    img = cv2.stylization(blur, sigma_s = 120, sigma_r = 0.7)
+    update_image()
+
+def imgVignette():
+    global img
+    height, width = img.shape[:2]  
+    
+    level=3
+        # Generate vignette mask using Gaussian kernels.
+    X_resultant_kernel = cv2.getGaussianKernel(width, width/level)
+    Y_resultant_kernel = cv2.getGaussianKernel(height, height/level)
+            
+        # Generating resultant_kernel matrix.
+    kernel = Y_resultant_kernel * X_resultant_kernel.T 
+    mask = kernel / kernel.max()
+        
+    img_vignette = np.copy(img)
+            
+        # Applying the mask to each channel in the input image.
+    for i in range(3):
+        img_vignette[:,:,i] = img_vignette[:,:,i] * mask
+    img=img_vignette
+    update_image()
+
 cropping = False
 drawing = False
 draw_color= (43, 57, 192)
@@ -142,12 +200,62 @@ def change_toolbar(clicked_button):
         text_mode = True
 
 
+def return_img(image_path):
+    pil_image = Image.open(image_path)
+    ctk_image = CTkImage(pil_image)
+    return ctk_image
+    
+
 
 def filter_update():
     CTkLabel(master=tool, text="Filter", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
     CTkLabel(master=tool, text=f"Choose Filter", font=("Corbel Bold", 18)).grid(row=1, column=0, sticky="nw", pady=20, padx=5, columnspan=3)
-    filter1_button = CTkButton(master=tool, text="", width=100, height=100,  corner_radius=10, image=r"imgBlur.jpg" ,  anchor="w")
-    filter1_button.grid(row=2, column=0, sticky="nw", pady=5, padx=5)
+    
+
+    image_paths = [
+    r"C:\Users\91984\Desktop\cgProj\Image-Editor\image-blur.png",
+    r"C:\Users\91984\Desktop\cgProj\Image-Editor\image-bright.png",
+    r"C:\Users\91984\Desktop\cgProj\Image-Editor\image-hdr.png",
+    r"C:\Users\91984\Desktop\cgProj\Image-Editor\image-sepia.png",
+    r"C:\Users\91984\Desktop\cgProj\Image-Editor\image-style.png",
+    r"C:\Users\91984\Desktop\cgProj\Image-Editor\image-vignette.png"
+    ]
+
+    # Dictionary to store the labels with unique identifiers
+    labels_dict = {}
+
+    # Function to handle label click events
+    def on_label_click(event, label_id):
+        if label_id == "label_0":
+            imgBlur()
+        elif label_id == "label_1":
+            imgBright()
+        elif label_id == "label_2":
+            imgHdr()
+        elif label_id == "label_3":
+            imgSepia()
+        elif label_id == "label_4":
+            imgStyle()
+        elif label_id == "label_5":
+            imgVignette()
+
+
+    # Create and place the labels
+    for i, image_path in enumerate(image_paths):
+                img_data = Image.open(image_path)
+                img = CTkImage(light_image=img_data, dark_image=img_data, size=(100, 100))
+                
+                # Create the label with a unique identifier
+                label_id = f"label_{i}"
+                label = CTkLabel(master=tool, text="", image=img)
+                label.grid(row=(i+2)//2, column=i%2, sticky="nw", pady=(5), padx=(5))
+                
+                # Store the label in the dictionary
+                labels_dict[label_id] = label
+                
+                # Bind the click event to the label
+                label.bind("<Button-1>", lambda event, label_id=label_id: on_label_click(event, label_id))
+
 
 def doodle_update():
     CTkLabel(master=tool, text="Doodle", font=("Corbel Bold", 24), width=220, anchor="w").grid(row=0, column=0, sticky="nw", pady=(100,0), padx=5, columnspan=7)
