@@ -4,6 +4,12 @@
 
 ---
 
+## 📸 Screenshots
+
+![Home](./image-editor-ss.png)
+
+---
+
 ## 🚀 Features
 
 - ✂️ Crop, resize, and rotate images
@@ -14,19 +20,13 @@
 
 ---
 
-## 📸 Screenshots
 
-![Home](./image-editor-ss.png)
-
-> Add your screenshots in a `/screenshots` folder inside the project root.
-
----
 
 ## 🧰 Tech Stack
 
 - **Python**
 - **OpenCV**
-- **Tkinter** (or your GUI framework)
+- **Tkinter**
 
 ---
 
@@ -36,7 +36,7 @@
 
 - Python 3.x
 - OpenCV (`cv2`)
-- (Optional) Tkinter (usually included with Python)
+- Tkinter
 
 ### Installation
 
